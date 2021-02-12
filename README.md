@@ -1,7 +1,7 @@
 # ldtk2-rs
 
 
-## 
+## Usage
 
 ```rust
   use ldtk2::Ldtk;
