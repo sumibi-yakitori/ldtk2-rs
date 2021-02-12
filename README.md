@@ -1,5 +1,7 @@
 # ldtk2-rs
 
+A thin crate for people who just want to use ldtk files freely.
+
 
 ## Usage
 
