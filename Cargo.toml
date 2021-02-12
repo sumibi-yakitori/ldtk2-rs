@@ -3,6 +3,17 @@ name = "ldtk2"
 version = "0.1.0"
 authors = ["sumibi-yakitori <nekosoft360@gmail.com>"]
 edition = "2018"
+license = "Apache-2.0"
+description = "A thin crate for people who just want to use ldtk files freely."
+homepage = "https://github.com/sumibi-yakitori/ldtk2-rs"
+repository = "https://github.com/sumibi-yakitori/ldtk2-rs"
+readme = "README.md"
+categories = ["game-development"]
+keywords = ["ldtk", "level-design"]
+
+[badges]
+github = { repository = "sumibi-yakitori/ldtk2-rs", workflow = "Rust" }
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

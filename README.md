@@ -1,4 +1,6 @@
-# ldtk2-rs
+[![Workflow Status](https://github.com/sumibi-yakitori/ldtk2-rs/workflows/Rust/badge.svg)](https://github.com/sumibi-yakitori/ldtk2-rs/actions?query=workflow%3A%22Rust%22)
+
+# ldtk2
 
 A thin crate for people who just want to use ldtk files freely.
 
@@ -18,3 +20,5 @@ A thin crate for people who just want to use ldtk files freely.
 
 - [LDtk-rs](https://github.com/katharostech/LDtk-rs) uses code generation, it does not get autocomplete support from rust-analyzer. Also, there are special license restrictions on using that crate.
 - [ldtk_rust](https://github.com/estivate/ldtk_rust) uses `.except()` inside the crate, you can't handle the error.
+
+License: Apache-2.0
