@@ -4,11 +4,17 @@
 //! # Usage
 //!
 //! ```rust
+//! use std::error::Error;
+//!
+//! fn main() -> Result<(), Box<dyn Error>> {
 //!   use ldtk2::Ldtk;
 //!
-//!   let map = Ldtk::from_file("example.ldtk")?;
+//!   let map = Ldtk::from_file("tests/example.ldtk")?;
 //!   // or
-//!   let map = Ldtk::from_str(include_str!("example.ldtk"))?;
+//!   let map = Ldtk::from_str(include_str!("../tests/example.ldtk"))?;
+//!
+//!   Ok(())
+//! }
 //! ```
 //!
 //!
