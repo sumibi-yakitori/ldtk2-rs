@@ -1,6 +1,6 @@
-[![Crates.io](https://img.shields.io/crates/v/ldtk2-rs.svg)](https://crates.io/crates/ldtk2-rs)
-[![Documentation](https://docs.rs/ldtk2-rs/badge.svg)](https://docs.rs/tetra)
-[![License](https://img.shields.io/crates/l/ldtk2-rs.svg)](LICENSE)
+[![Crates.io](https://img.shields.io/crates/v/ldtk2.svg)](https://crates.io/crates/ldtk2)
+[![Documentation](https://docs.rs/ldtk2/badge.svg)](https://docs.rs/ldtk2)
+[![License](https://img.shields.io/crates/l/ldtk2.svg)](LICENSE)
 [![Workflow Status](https://github.com/sumibi-yakitori/ldtk2-rs/workflows/Rust/badge.svg)](https://github.com/sumibi-yakitori/ldtk2-rs/actions?query=workflow%3A%22Rust%22)
 
 # ldtk2
