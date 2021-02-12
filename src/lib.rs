@@ -9,13 +9,19 @@
 //!
 //! ```rust
 //! use std::error::Error;
+//! use std::path::Path;
+//! use std::convert::TryInto;
 //!
 //! fn main() -> Result<(), Box<dyn Error>> {
 //!   use ldtk2::Ldtk;
 //!
-//!   let map = Ldtk::from_file("tests/example.ldtk")?;
+//!   let map = Ldtk::from_path("tests/example.ldtk")?;
+//!   // or
+//!   let map: Ldtk = Path::new("tests/example.ldtk").try_into()?;
 //!   // or
 //!   let map = Ldtk::from_str(include_str!("../tests/example.ldtk"))?;
+//!   // or
+//!   let map: Ldtk = include_str!("../tests/example.ldtk").try_into()?;
 //!
 //!   Ok(())
 //! }
@@ -29,19 +35,11 @@
 
 mod ldtk;
 pub use ldtk::*;
-use std::{error::Error, path::Path};
+use std::{convert::TryFrom, error::Error, path::Path};
 pub type Ldtk = Coordinate;
 
-// #[test]
-// fn test() {
-//   use ldtk2::Ldtk;
-//   let map = Ldtk::from_file("example.ldtk")?;
-//   // or
-//   let map = Ldtk::from_str(include_str!("example.ldtk"))?;
-// }
-
 impl Ldtk {
-  pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn Error>> {
+  pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn Error>> {
     let value: Self = serde_json::from_str(&std::fs::read_to_string(path)?)?;
     Ok(value)
   }
@@ -49,5 +47,21 @@ impl Ldtk {
   pub fn from_str<S: AsRef<str>>(s: S) -> Result<Self, Box<dyn Error>> {
     let value: Self = serde_json::from_str(s.as_ref())?;
     Ok(value)
+  }
+}
+
+impl TryFrom<&Path> for Ldtk {
+  type Error = Box<dyn Error>;
+
+  fn try_from(path: &Path) -> Result<Self, Self::Error> {
+    Ldtk::from_path(path)
+  }
+}
+
+impl TryFrom<&str> for Ldtk {
+  type Error = Box<dyn Error>;
+
+  fn try_from(s: &str) -> Result<Self, Self::Error> {
+    Ldtk::from_str(s)
   }
 }
