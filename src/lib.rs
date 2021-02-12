@@ -22,14 +22,13 @@ pub use ldtk::*;
 use std::{error::Error, path::Path};
 pub type Ldtk = Coordinate;
 
-#[test]
-fn test() {
-  use ldtk2::Ldtk;
-
-  let map = Ldtk::from_file("example.ldtk")?;
-  // or
-  let map = Ldtk::from_str(include_str!("example.ldtk"))?;
-}
+// #[test]
+// fn test() {
+//   use ldtk2::Ldtk;
+//   let map = Ldtk::from_file("example.ldtk")?;
+//   // or
+//   let map = Ldtk::from_str(include_str!("example.ldtk"))?;
+// }
 
 impl Ldtk {
   pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn Error>> {
