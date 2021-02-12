@@ -1,0 +1,3 @@
+control_brace_style = "ClosingNextLine"
+take_source_hints = true
+tab_spaces = 2
