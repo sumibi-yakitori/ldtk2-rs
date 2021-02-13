@@ -31,7 +31,7 @@
 //! # Why did I create this nonsense?
 //!
 //! - [LDtk-rs](https://github.com/katharostech/LDtk-rs) uses code generation, it does not get autocomplete support from rust-analyzer. Also, there are [special license](https://github.com/katharostech/katharos-license) restrictions on using that crate.
-//! - [ldtk_rust](https://github.com/estivate/ldtk_rust) uses `.except()` inside the crate, you can't handle the error.
+//! - [ldtk_rust](https://github.com/estivate/ldtk_rust) uses `.except()` inside the crate, you can't handle errors.
 
 mod ldtk;
 pub use ldtk::*;
