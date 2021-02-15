@@ -6,6 +6,7 @@ edition = "2018"
 license = "Apache-2.0"
 description = "A thin crate for people who just want to use ldtk files freely"
 homepage = "https://github.com/sumibi-yakitori/ldtk2-rs"
+documentation = "https://docs.rs/ldtk2"
 repository = "https://github.com/sumibi-yakitori/ldtk2-rs"
 readme = "README.md"
 categories = ["game-development"]
