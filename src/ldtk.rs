@@ -16,10 +16,12 @@ use std::collections::HashMap;
 
 /// This file is a JSON schema of files created by LDtk level editor (https://ldtk.io).
 ///
-/// This is the root of any Project JSON file. It contains:  - the project settings, - an
-/// array of levels, - and a definition object (that can probably be safely ignored for most
+/// This is the root of any Project JSON file. It contains:  
+/// - the project settings, 
+/// - an array of levels, 
+/// - a group of definitions (that can probably be safely ignored for most
 /// users).
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Coordinate {
     /// Number of backup files to keep, if the `backupOnSave` is TRUE
     #[serde(rename = "backupLimit")]
@@ -36,6 +38,12 @@ pub struct Coordinate {
     /// Default background color of levels
     #[serde(rename = "defaultLevelBgColor")]
     pub default_level_bg_color: String,
+    /// Default new level height
+    #[serde(rename = "defaultLevelHeight")]
+    pub default_level_height: i64,
+    /// Default new level width
+    #[serde(rename = "defaultLevelWidth")]
+    pub default_level_width: i64,
     /// Default X pivot (0 to 1) for new entities
     #[serde(rename = "defaultPivotX")]
     pub default_pivot_x: f64,
@@ -43,11 +51,11 @@ pub struct Coordinate {
     #[serde(rename = "defaultPivotY")]
     pub default_pivot_y: f64,
     /// A structure containing all the definitions of this project
-    pub defs: Option<Definitions>,
-    /// If TRUE, all layers in all levels will also be exported as PNG along with the project
-    /// file (default is FALSE)
+    pub defs: Definitions,
+    /// **WARNING**: this deprecated value is no longer exported since version 0.9.3  Replaced
+    /// by: `imageExportMode`
     #[serde(rename = "exportPng")]
-    pub export_png: bool,
+    pub export_png: Option<bool>,
     /// If TRUE, a Tiled compatible file will also be generated along with the LDtk JSON file
     /// (default is FALSE)
     #[serde(rename = "exportTiled")]
@@ -56,9 +64,19 @@ pub struct Coordinate {
     /// in a sub-folder for each level.
     #[serde(rename = "externalLevels")]
     pub external_levels: bool,
+    /// An array containing various advanced flags (ie. options or other states). Possible
+    /// values: `DiscardPreCsvIntGrid`, `IgnoreBackupSuggest`
+    pub flags: Vec<Flag>,
+    /// "Image export" option when saving project. Possible values: `None`, `OneImagePerLayer`,
+    /// `OneImagePerLevel`
+    #[serde(rename = "imageExportMode")]
+    pub image_export_mode: ImageExportMode,
     /// File format version
     #[serde(rename = "jsonVersion")]
     pub json_version: String,
+    /// The default naming convention for level identifiers.
+    #[serde(rename = "levelNamePattern")]
+    pub level_name_pattern: String,
     /// All levels. The order of this array is only relevant in `LinearHorizontal` and
     /// `linearVertical` world layouts (see `worldLayout` value). Otherwise, you should refer to
     /// the `worldX`,`worldY` coordinates of each Level.
@@ -67,6 +85,7 @@ pub struct Coordinate {
     /// FALSE)
     #[serde(rename = "minifyJson")]
     pub minify_json: bool,
+    /// Next Unique integer ID available
     #[serde(rename = "nextUid")]
     pub next_uid: i64,
     /// File naming pattern for exported PNGs
@@ -81,7 +100,7 @@ pub struct Coordinate {
     /// An enum that describes how levels are organized in this project (ie. linearly or in a 2D
     /// space). Possible values: `Free`, `GridVania`, `LinearHorizontal`, `LinearVertical`
     #[serde(rename = "worldLayout")]
-    pub world_layout: Option<WorldLayout>,
+    pub world_layout: WorldLayout,
 }
 
 /// A structure containing all the definitions of this project
@@ -92,35 +111,55 @@ pub struct Coordinate {
 /// from definitions is often duplicated in fields prefixed with a double underscore (eg.
 /// `__identifier` or `__type`).  The 2 only definition types you might need here are
 /// **Tilesets** and **Enums**.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Definitions {
+    /// All entities definitions, including their custom fields
     pub entities: Vec<EntityDefinition>,
+    /// All internal enums
     pub enums: Vec<EnumDefinition>,
     /// Note: external enums are exactly the same as `enums`, except they have a `relPath` to
     /// point to an external source file.
     #[serde(rename = "externalEnums")]
     pub external_enums: Vec<EnumDefinition>,
+    /// All layer definitions
     pub layers: Vec<LayerDefinition>,
+    /// All custom fields available to all levels.
+    #[serde(rename = "levelFields")]
+    pub level_fields: Vec<FieldDefinition>,
+    /// All tilesets
     pub tilesets: Vec<TilesetDefinition>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EntityDefinition {
     /// Base entity color
     pub color: String,
     /// Array of field definitions
     #[serde(rename = "fieldDefs")]
     pub field_defs: Vec<FieldDefinition>,
+    #[serde(rename = "fillOpacity")]
+    pub fill_opacity: f64,
     /// Pixel height
     pub height: i64,
+    pub hollow: bool,
     /// Unique String identifier
     pub identifier: String,
+    /// Only applies to entities resizable on both X/Y. If TRUE, the entity instance width/height
+    /// will keep the same aspect ratio as the definition.
+    #[serde(rename = "keepAspectRatio")]
+    pub keep_aspect_ratio: bool,
     /// Possible values: `DiscardOldOnes`, `PreventAdding`, `MoveLastOne`
     #[serde(rename = "limitBehavior")]
-    pub limit_behavior: Option<LimitBehavior>,
-    /// Max instances per level
-    #[serde(rename = "maxPerLevel")]
-    pub max_per_level: i64,
+    pub limit_behavior: LimitBehavior,
+    /// If TRUE, the maxCount is a "per world" limit, if FALSE, it's a "per level". Possible
+    /// values: `PerLayer`, `PerLevel`, `PerWorld`
+    #[serde(rename = "limitScope")]
+    pub limit_scope: LimitScope,
+    #[serde(rename = "lineOpacity")]
+    pub line_opacity: f64,
+    /// Max instances count
+    #[serde(rename = "maxCount")]
+    pub max_count: i64,
     /// Pivot X coordinate (from 0 to 1.0)
     #[serde(rename = "pivotX")]
     pub pivot_x: f64,
@@ -129,16 +168,24 @@ pub struct EntityDefinition {
     pub pivot_y: f64,
     /// Possible values: `Rectangle`, `Ellipse`, `Tile`, `Cross`
     #[serde(rename = "renderMode")]
-    pub render_mode: Option<RenderMode>,
+    pub render_mode: RenderMode,
+    /// If TRUE, the entity instances will be resizable horizontally
+    #[serde(rename = "resizableX")]
+    pub resizable_x: bool,
+    /// If TRUE, the entity instances will be resizable vertically
+    #[serde(rename = "resizableY")]
+    pub resizable_y: bool,
     /// Display entity name in editor
     #[serde(rename = "showName")]
     pub show_name: bool,
+    /// An array of strings that classifies this entity
+    pub tags: Vec<String>,
     /// Tile ID used for optional tile display
     #[serde(rename = "tileId")]
     pub tile_id: Option<i64>,
-    /// Possible values: `Stretch`, `Crop`
+    /// Possible values: `Cover`, `FitInside`, `Repeat`, `Stretch`
     #[serde(rename = "tileRenderMode")]
-    pub tile_render_mode: Option<TileRenderMode>,
+    pub tile_render_mode: TileRenderMode,
     /// Tileset ID used for optional tile display
     #[serde(rename = "tilesetId")]
     pub tileset_id: Option<i64>,
@@ -150,7 +197,7 @@ pub struct EntityDefinition {
 
 /// This section is mostly only intended for the LDtk editor app itself. You can safely
 /// ignore it.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FieldDefinition {
     /// Human readable value type (eg. `Int`, `Float`, `Point`, etc.). If the field is an array,
     /// this field will look like `Array<...>` (eg. `Array<Int>`, `Array<Point>` etc.)
@@ -175,13 +222,15 @@ pub struct FieldDefinition {
     pub default_override: Option<serde_json::Value>,
     #[serde(rename = "editorAlwaysShow")]
     pub editor_always_show: bool,
-    /// Possible values: `Hidden`, `ValueOnly`, `NameAndValue`, `EntityTile`, `PointStar`,
-    /// `PointPath`, `RadiusPx`, `RadiusGrid`
+    #[serde(rename = "editorCutLongValues")]
+    pub editor_cut_long_values: bool,
+    /// Possible values: `Hidden`, `ValueOnly`, `NameAndValue`, `EntityTile`, `Points`,
+    /// `PointStar`, `PointPath`, `PointPathLoop`, `RadiusPx`, `RadiusGrid`
     #[serde(rename = "editorDisplayMode")]
-    pub editor_display_mode: Option<EditorDisplayMode>,
+    pub editor_display_mode: EditorDisplayMode,
     /// Possible values: `Above`, `Center`, `Beneath`
     #[serde(rename = "editorDisplayPos")]
-    pub editor_display_pos: Option<EditorDisplayPos>,
+    pub editor_display_pos: EditorDisplayPos,
     /// Unique String identifier
     pub identifier: String,
     /// TRUE if the value is an array of multiple values
@@ -194,14 +243,18 @@ pub struct FieldDefinition {
     /// Optional regular expression that needs to be matched to accept values. Expected format:
     /// `/some_reg_ex/g`, with optional "i" flag.
     pub regex: Option<String>,
+    /// Possible values: &lt;`null`&gt;, `LangPython`, `LangRuby`, `LangJS`, `LangLua`, `LangC`,
+    /// `LangHaxe`, `LangMarkdown`, `LangJson`, `LangXml`
+    #[serde(rename = "textLanguageMode")]
+    pub text_language_mode: Option<TextLanguageMode>,
     /// Internal type enum
     #[serde(rename = "type")]
     pub purple_type: Option<serde_json::Value>,
-    /// Unique Intidentifier
+    /// Unique Int identifier
     pub uid: i64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EnumDefinition {
     #[serde(rename = "externalFileChecksum")]
     pub external_file_checksum: Option<String>,
@@ -219,12 +272,14 @@ pub struct EnumDefinition {
     pub values: Vec<EnumValueDefinition>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EnumValueDefinition {
     /// An array of 4 Int values that refers to the tile in the tileset image: `[ x, y, width,
     /// height ]`
     #[serde(rename = "__tileSrcRect")]
-    pub tile_src_rect: Vec<i64>,
+    pub tile_src_rect: Option<Vec<i64>>,
+    /// Optional color
+    pub color: i64,
     /// Enum value
     pub id: String,
     /// The optional ID of the tile
@@ -232,29 +287,34 @@ pub struct EnumValueDefinition {
     pub tile_id: Option<i64>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LayerDefinition {
     /// Type of the layer (*IntGrid, Entities, Tiles or AutoLayer*)
     #[serde(rename = "__type")]
     pub layer_definition_type: String,
     /// Contains all the auto-layer rule definitions.
     #[serde(rename = "autoRuleGroups")]
-    pub auto_rule_groups: Vec<HashMap<String, Option<serde_json::Value>>>,
+    pub auto_rule_groups: Vec<AutoLayerRuleGroup>,
     #[serde(rename = "autoSourceLayerDefUid")]
     pub auto_source_layer_def_uid: Option<i64>,
-    /// Reference to the Tileset UID being used by this auto-layer rules
+    /// Reference to the Tileset UID being used by this auto-layer rules. WARNING: some layer
+    /// *instances* might use a different tileset. So most of the time, you should probably use
+    /// the `__tilesetDefUid` value from layer instances.
     #[serde(rename = "autoTilesetDefUid")]
     pub auto_tileset_def_uid: Option<i64>,
     /// Opacity of the layer (0 to 1.0)
     #[serde(rename = "displayOpacity")]
     pub display_opacity: f64,
+    /// An array of tags to forbid some Entities in this layer
+    #[serde(rename = "excludedTags")]
+    pub excluded_tags: Vec<String>,
     /// Width and height of the grid in pixels
     #[serde(rename = "gridSize")]
     pub grid_size: i64,
     /// Unique String identifier
     pub identifier: String,
-    /// An array (using IntGrid value as array index, starting from 0) that defines extra
-    /// optional info for each IntGrid value.
+    /// An array that defines extra optional info for each IntGrid value. The array is sorted
+    /// using value (ascending).
     #[serde(rename = "intGridValues")]
     pub int_grid_values: Vec<IntGridValueDefinition>,
     /// X offset of the layer, in pixels (IMPORTANT: this should be added to the `LayerInstance`
@@ -265,6 +325,9 @@ pub struct LayerDefinition {
     /// optional offset)
     #[serde(rename = "pxOffsetY")]
     pub px_offset_y: i64,
+    /// An array of tags to filter Entities that can be added to this layer
+    #[serde(rename = "requiredTags")]
+    pub required_tags: Vec<String>,
     /// If the tiles are smaller or larger than the layer grid, the pivot value will be used to
     /// position the tile relatively its grid cell.
     #[serde(rename = "tilePivotX")]
@@ -273,34 +336,121 @@ pub struct LayerDefinition {
     /// position the tile relatively its grid cell.
     #[serde(rename = "tilePivotY")]
     pub tile_pivot_y: f64,
-    /// Reference to the Tileset UID being used by this Tile layer
+    /// Reference to the Tileset UID being used by this Tile layer. WARNING: some layer
+    /// *instances* might use a different tileset. So most of the time, you should probably use
+    /// the `__tilesetDefUid` value from layer instances.
     #[serde(rename = "tilesetDefUid")]
     pub tileset_def_uid: Option<i64>,
     /// Type of the layer as Haxe Enum Possible values: `IntGrid`, `Entities`, `Tiles`,
     /// `AutoLayer`
     #[serde(rename = "type")]
-    pub purple_type: Option<Type>,
+    pub purple_type: Type,
     /// Unique Int identifier
     pub uid: i64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutoLayerRuleGroup {
+    pub active: bool,
+    pub collapsed: bool,
+    #[serde(rename = "isOptional")]
+    pub is_optional: bool,
+    pub name: String,
+    pub rules: Vec<AutoLayerRuleDefinition>,
+    pub uid: i64,
+}
+
+/// This complex section isn't meant to be used by game devs at all, as these rules are
+/// completely resolved internally by the editor before any saving. You should just ignore
+/// this part.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutoLayerRuleDefinition {
+    /// If FALSE, the rule effect isn't applied, and no tiles are generated.
+    pub active: bool,
+    /// When TRUE, the rule will prevent other rules to be applied in the same cell if it matches
+    /// (TRUE by default).
+    #[serde(rename = "breakOnMatch")]
+    pub break_on_match: bool,
+    /// Chances for this rule to be applied (0 to 1)
+    pub chance: f64,
+    /// Checker mode Possible values: `None`, `Horizontal`, `Vertical`
+    pub checker: Checker,
+    /// If TRUE, allow rule to be matched by flipping its pattern horizontally
+    #[serde(rename = "flipX")]
+    pub flip_x: bool,
+    /// If TRUE, allow rule to be matched by flipping its pattern vertically
+    #[serde(rename = "flipY")]
+    pub flip_y: bool,
+    /// Default IntGrid value when checking cells outside of level bounds
+    #[serde(rename = "outOfBoundsValue")]
+    pub out_of_bounds_value: Option<i64>,
+    /// Rule pattern (size x size)
+    pub pattern: Vec<i64>,
+    /// If TRUE, enable Perlin filtering to only apply rule on specific random area
+    #[serde(rename = "perlinActive")]
+    pub perlin_active: bool,
+    #[serde(rename = "perlinOctaves")]
+    pub perlin_octaves: f64,
+    #[serde(rename = "perlinScale")]
+    pub perlin_scale: f64,
+    #[serde(rename = "perlinSeed")]
+    pub perlin_seed: f64,
+    /// X pivot of a tile stamp (0-1)
+    #[serde(rename = "pivotX")]
+    pub pivot_x: f64,
+    /// Y pivot of a tile stamp (0-1)
+    #[serde(rename = "pivotY")]
+    pub pivot_y: f64,
+    /// Pattern width & height. Should only be 1,3,5 or 7.
+    pub size: i64,
+    /// Array of all the tile IDs. They are used randomly or as stamps, based on `tileMode` value.
+    #[serde(rename = "tileIds")]
+    pub tile_ids: Vec<i64>,
+    /// Defines how tileIds array is used Possible values: `Single`, `Stamp`
+    #[serde(rename = "tileMode")]
+    pub tile_mode: TileMode,
+    /// Unique Int identifier
+    pub uid: i64,
+    /// X cell coord modulo
+    #[serde(rename = "xModulo")]
+    pub x_modulo: i64,
+    /// Y cell coord modulo
+    #[serde(rename = "yModulo")]
+    pub y_modulo: i64,
+}
+
 /// IntGrid value definition
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IntGridValueDefinition {
     pub color: String,
     /// Unique String identifier
     pub identifier: Option<String>,
+    /// The IntGrid value itself
+    pub value: i64,
 }
 
 /// The `Tileset` definition is the most important part among project definitions. It
 /// contains some extra informations about each integrated tileset. If you only had to parse
 /// one definition section, that would be the one.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TilesetDefinition {
+    /// Grid-based height
+    #[serde(rename = "__cHei")]
+    pub c_hei: i64,
+    /// Grid-based width
+    #[serde(rename = "__cWid")]
+    pub c_wid: i64,
     /// The following data is used internally for various optimizations. It's always synced with
     /// source image changes.
     #[serde(rename = "cachedPixelData")]
     pub cached_pixel_data: Option<HashMap<String, Option<serde_json::Value>>>,
+    /// An array of custom tile metadata
+    #[serde(rename = "customData")]
+    pub custom_data: Vec<HashMap<String, Option<serde_json::Value>>>,
+    /// Tileset tags using Enum values specified by `tagsSourceEnumId`. This array contains 1
+    /// element per Enum value, which contains an array of all Tile IDs that are tagged with it.
+    #[serde(rename = "enumTags")]
+    pub enum_tags: Vec<HashMap<String, Option<serde_json::Value>>>,
     /// Unique String identifier
     pub identifier: String,
     /// Distance in pixels from image borders
@@ -319,6 +469,9 @@ pub struct TilesetDefinition {
     pub saved_selections: Vec<HashMap<String, Option<serde_json::Value>>>,
     /// Space in pixels between all tiles
     pub spacing: i64,
+    /// Optional Enum definition UID used for this tileset meta-data
+    #[serde(rename = "tagsSourceEnumUid")]
+    pub tags_source_enum_uid: Option<i64>,
     #[serde(rename = "tileGridSize")]
     pub tile_grid_size: i64,
     /// Unique Intidentifier
@@ -333,7 +486,7 @@ pub struct TilesetDefinition {
 /// except heavy sections, like the `layerInstances` array (which will be null). The
 /// `externalRelPath` string points to the `ldtkl` file.  A `ldtkl` file is just a JSON file
 /// containing exactly what is described below.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Level {
     /// Background color of the level (same as `bgColor`, except the default value is
     /// automatically used here if its value is `null`)
@@ -358,8 +511,8 @@ pub struct Level {
     #[serde(rename = "bgPivotY")]
     pub bg_pivot_y: f64,
     /// An enum defining the way the background image (if any) is positioned on the level. See
-    /// `__bgPos` for resulting position info. Possible values: `Unscaled`, `Contain`, `Cover`,
-    /// `CoverDirty`
+    /// `__bgPos` for resulting position info. Possible values: &lt;`null`&gt;, `Unscaled`,
+    /// `Contain`, `Cover`, `CoverDirty`
     #[serde(rename = "bgPos")]
     pub level_bg_pos: Option<BgPos>,
     /// The *optional* relative path to the level background image.
@@ -369,6 +522,9 @@ pub struct Level {
     /// this case, this **relative** path points to the level Json file.
     #[serde(rename = "externalRelPath")]
     pub external_rel_path: Option<String>,
+    /// An array containing this level custom field values.
+    #[serde(rename = "fieldInstances")]
+    pub field_instances: Vec<FieldInstance>,
     /// Unique String identifier
     pub identifier: String,
     /// An array containing all Layer instances. **IMPORTANT**: if the project option "*Save
@@ -384,6 +540,11 @@ pub struct Level {
     pub px_wid: i64,
     /// Unique Int identifier
     pub uid: i64,
+    /// If TRUE, the level identifier will always automatically use the naming pattern as defined
+    /// in `Project.levelNamePattern`. Becomes FALSE if the identifier is manually modified by
+    /// user.
+    #[serde(rename = "useAutoIdentifier")]
+    pub use_auto_identifier: bool,
     /// World X coordinate in pixels
     #[serde(rename = "worldX")]
     pub world_x: i64,
@@ -392,10 +553,8 @@ pub struct Level {
     pub world_y: i64,
 }
 
-/// Position informations of the background image, if there is one.
-///
 /// Level background image position info
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LevelBackgroundPosition {
     /// An array of 4 float values describing the cropped sub-rectangle of the displayed
     /// background image. This cropping happens when original is larger than the level bounds.
@@ -411,7 +570,27 @@ pub struct LevelBackgroundPosition {
     pub top_left_px: Vec<i64>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FieldInstance {
+    /// Field definition identifier
+    #[serde(rename = "__identifier")]
+    pub identifier: String,
+    /// Type of the field, such as `Int`, `Float`, `Enum(my_enum_name)`, `Bool`, etc.
+    #[serde(rename = "__type")]
+    pub field_instance_type: String,
+    /// Actual value of the field instance. The value type may vary, depending on `__type`
+    /// (Integer, Boolean, String etc.)<br/>  It can also be an `Array` of those same types.
+    #[serde(rename = "__value")]
+    pub value: Option<serde_json::Value>,
+    /// Reference of the **Field definition** UID
+    #[serde(rename = "defUid")]
+    pub def_uid: i64,
+    /// Editor internal raw values
+    #[serde(rename = "realEditorValues")]
+    pub real_editor_values: Vec<Option<serde_json::Value>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LayerInstance {
     /// Grid-based height
     #[serde(rename = "__cHei")]
@@ -453,14 +632,28 @@ pub struct LayerInstance {
     pub entity_instances: Vec<EntityInstance>,
     #[serde(rename = "gridTiles")]
     pub grid_tiles: Vec<TileInstance>,
+    /// **WARNING**: this deprecated value will be *removed* completely on version 0.10.0+
+    /// Replaced by: `intGridCsv`
     #[serde(rename = "intGrid")]
-    pub int_grid: Vec<IntGridValueInstance>,
+    pub int_grid: Option<Vec<IntGridValueInstance>>,
+    /// A list of all values in the IntGrid layer, stored from left to right, and top to bottom
+    /// (ie. first row from left to right, followed by second row, etc). `0` means "empty cell"
+    /// and IntGrid values start at 1. This array size is `__cWid` x `__cHei` cells.
+    #[serde(rename = "intGridCsv")]
+    pub int_grid_csv: Vec<i64>,
     /// Reference the Layer definition UID
     #[serde(rename = "layerDefUid")]
     pub layer_def_uid: i64,
     /// Reference to the UID of the level containing this layer instance
     #[serde(rename = "levelId")]
     pub level_id: i64,
+    /// An Array containing the UIDs of optional rules that were enabled in this specific layer
+    /// instance.
+    #[serde(rename = "optionalRules")]
+    pub optional_rules: Vec<i64>,
+    /// This layer can use another tileset by overriding the tileset UID here.
+    #[serde(rename = "overrideTilesetUid")]
+    pub override_tileset_uid: Option<i64>,
     /// X offset in pixels to render this layer, usually 0 (IMPORTANT: this should be added to
     /// the `LayerDef` optional offset, see `__pxTotalOffsetX`)
     #[serde(rename = "pxOffsetX")]
@@ -471,10 +664,12 @@ pub struct LayerInstance {
     pub px_offset_y: i64,
     /// Random seed used for Auto-Layers rendering
     pub seed: i64,
+    /// Layer instance visibility
+    pub visible: bool,
 }
 
 /// This structure represents a single tile from a given Tileset.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TileInstance {
     /// Internal data used by the editor.<br/>  For auto-layer tiles: `[ruleId, coordId]`.<br/>
     /// For tile-layer tiles: `[coordId]`.
@@ -492,7 +687,7 @@ pub struct TileInstance {
     pub t: i64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EntityInstance {
     /// Grid-based coordinates (`[x,y]` format)
     #[serde(rename = "__grid")]
@@ -510,38 +705,22 @@ pub struct EntityInstance {
     /// Reference of the **Entity definition** UID
     #[serde(rename = "defUid")]
     pub def_uid: i64,
+    /// An array of all custom fields and their values.
     #[serde(rename = "fieldInstances")]
     pub field_instances: Vec<FieldInstance>,
+    /// Entity height in pixels. For non-resizable entities, it will be the same as Entity
+    /// definition.
+    pub height: i64,
     /// Pixel coordinates (`[x,y]` format) in current level coordinate space. Don't forget
     /// optional layer offsets, if they exist!
     pub px: Vec<i64>,
+    /// Entity width in pixels. For non-resizable entities, it will be the same as Entity
+    /// definition.
+    pub width: i64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct FieldInstance {
-    /// Field definition identifier
-    #[serde(rename = "__identifier")]
-    pub identifier: String,
-    /// Type of the field, such as `Int`, `Float`, `Enum(my_enum_name)`, `Bool`, etc.
-    #[serde(rename = "__type")]
-    pub field_instance_type: String,
-    /// Actual value of the field instance. The value type may vary, depending on `__type`
-    /// (Integer, Boolean, String etc.)<br/>  It can also be an `Array` of those same types.
-    #[serde(rename = "__value")]
-    pub value: Option<serde_json::Value>,
-    /// Reference of the **Field definition** UID
-    #[serde(rename = "defUid")]
-    pub def_uid: i64,
-    /// Editor internal raw values
-    #[serde(rename = "realEditorValues")]
-    pub real_editor_values: Vec<Option<serde_json::Value>>,
-}
-
-/// Optional Tile used to display this entity (it could either be the default Entity tile, or
-/// some tile provided by a field value, like an Enum).
-///
 /// Tile data in an Entity instance
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EntityInstanceTile {
     /// An array of 4 Int values that refers to the tile in the tileset image: `[ x, y, width,
     /// height ]`
@@ -553,7 +732,7 @@ pub struct EntityInstanceTile {
 }
 
 /// IntGrid value instance
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IntGridValueInstance {
     /// Coordinate ID in the layer grid
     #[serde(rename = "coordId")]
@@ -563,7 +742,7 @@ pub struct IntGridValueInstance {
 }
 
 /// Nearby level info
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NeighbourLevel {
     /// A single lowercase character tipping on the level location (`n`orth, `s`outh, `w`est,
     /// `e`ast).
@@ -572,38 +751,63 @@ pub struct NeighbourLevel {
     pub level_uid: i64,
 }
 
-/// Possible values: `Hidden`, `ValueOnly`, `NameAndValue`, `EntityTile`, `PointStar`,
-/// `PointPath`, `RadiusPx`, `RadiusGrid`
-#[derive(Serialize, Deserialize, Clone, Debug)]
+/// Possible values: `Hidden`, `ValueOnly`, `NameAndValue`, `EntityTile`, `Points`,
+/// `PointStar`, `PointPath`, `PointPathLoop`, `RadiusPx`, `RadiusGrid`
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum EditorDisplayMode {
     EntityTile,
     Hidden,
     NameAndValue,
     PointPath,
+    PointPathLoop,
     PointStar,
+    Points,
     RadiusGrid,
     RadiusPx,
     ValueOnly,
 }
 
 /// Possible values: `Above`, `Center`, `Beneath`
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum EditorDisplayPos {
     Above,
     Beneath,
     Center,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TextLanguageMode {
+    LangC,
+    LangHaxe,
+    #[serde(rename = "LangJS")]
+    LangJs,
+    LangJson,
+    LangLua,
+    LangMarkdown,
+    LangPython,
+    LangRuby,
+    LangXml,
+}
+
 /// Possible values: `DiscardOldOnes`, `PreventAdding`, `MoveLastOne`
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LimitBehavior {
     DiscardOldOnes,
     MoveLastOne,
     PreventAdding,
 }
 
+/// If TRUE, the maxCount is a "per world" limit, if FALSE, it's a "per level". Possible
+/// values: `PerLayer`, `PerLevel`, `PerWorld`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum LimitScope {
+    PerLayer,
+    PerLevel,
+    PerWorld,
+}
+
 /// Possible values: `Rectangle`, `Ellipse`, `Tile`, `Cross`
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RenderMode {
     Cross,
     Ellipse,
@@ -611,16 +815,33 @@ pub enum RenderMode {
     Tile,
 }
 
-/// Possible values: `Stretch`, `Crop`
-#[derive(Serialize, Deserialize, Clone, Debug)]
+/// Possible values: `Cover`, `FitInside`, `Repeat`, `Stretch`
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TileRenderMode {
-    Crop,
+    Cover,
+    FitInside,
+    Repeat,
     Stretch,
+}
+
+/// Checker mode Possible values: `None`, `Horizontal`, `Vertical`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Checker {
+    Horizontal,
+    None,
+    Vertical,
+}
+
+/// Defines how tileIds array is used Possible values: `Single`, `Stamp`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TileMode {
+    Single,
+    Stamp,
 }
 
 /// Type of the layer as Haxe Enum Possible values: `IntGrid`, `Entities`, `Tiles`,
 /// `AutoLayer`
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Type {
     AutoLayer,
     Entities,
@@ -628,10 +849,22 @@ pub enum Type {
     Tiles,
 }
 
-/// An enum defining the way the background image (if any) is positioned on the level. See
-/// `__bgPos` for resulting position info. Possible values: `Unscaled`, `Contain`, `Cover`,
-/// `CoverDirty`
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Flag {
+    DiscardPreCsvIntGrid,
+    IgnoreBackupSuggest,
+}
+
+/// "Image export" option when saving project. Possible values: `None`, `OneImagePerLayer`,
+/// `OneImagePerLevel`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ImageExportMode {
+    None,
+    OneImagePerLayer,
+    OneImagePerLevel,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum BgPos {
     Contain,
     Cover,
@@ -641,7 +874,7 @@ pub enum BgPos {
 
 /// An enum that describes how levels are organized in this project (ie. linearly or in a 2D
 /// space). Possible values: `Free`, `GridVania`, `LinearHorizontal`, `LinearVertical`
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WorldLayout {
     Free,
     GridVania,
