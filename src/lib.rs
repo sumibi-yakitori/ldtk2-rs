@@ -9,7 +9,7 @@
 //!
 //! # Supported LDtk file versions
 //!
-//! `>=0.7.2`
+//! `>=0.9.3`
 //!
 //!
 //! # Usage
@@ -19,9 +19,7 @@
 //! ```
 //!
 //! ```rust
-//! use std::error::Error;
-//! use std::path::Path;
-//! use std::convert::TryInto;
+//! use std::{error::Error, path::Path, convert::TryInto};
 //!
 //! fn main() -> Result<(), Box<dyn Error>> {
 //!   use ldtk2::Ldtk;
