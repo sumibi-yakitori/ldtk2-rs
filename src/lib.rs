@@ -37,34 +37,43 @@
 //! ```
 
 mod ldtk;
+
+pub use anyhow;
 pub use ldtk::*;
-use std::{convert::TryFrom, error::Error, path::Path};
+pub use serde_json;
 pub type Ldtk = Coordinate;
 
+use anyhow::{Context, Error, Result};
+use std::{convert::TryFrom, path::Path};
+
 impl Ldtk {
-  pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn Error>> {
-    let value: Self = serde_json::from_str(&std::fs::read_to_string(path)?)?;
+  pub fn from_path(path: impl AsRef<Path>) -> Result<Self> {
+    let path_str = path.as_ref().to_string_lossy().to_string();
+    let value: Self = serde_json::from_str(
+      &std::fs::read_to_string(path)
+        .with_context(|| format!("Failed to open ldtk file: {}", path_str))?,
+    )?;
     Ok(value)
   }
 
-  pub fn from_str<S: AsRef<str>>(s: S) -> Result<Self, Box<dyn Error>> {
+  pub fn from_str(s: impl AsRef<str>) -> Result<Self, serde_json::Error> {
     let value: Self = serde_json::from_str(s.as_ref())?;
     Ok(value)
   }
 }
 
 impl TryFrom<&Path> for Ldtk {
-  type Error = Box<dyn Error>;
+  type Error = Error;
 
-  fn try_from(path: &Path) -> Result<Self, Self::Error> {
+  fn try_from(path: &Path) -> Result<Self> {
     Ldtk::from_path(path)
   }
 }
 
 impl TryFrom<&str> for Ldtk {
-  type Error = Box<dyn Error>;
+  type Error = serde_json::Error;
 
-  fn try_from(s: &str) -> Result<Self, Self::Error> {
+  fn try_from(s: &str) -> Result<Self, serde_json::Error> {
     Ldtk::from_str(s)
   }
 }
