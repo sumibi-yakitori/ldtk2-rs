@@ -19,7 +19,7 @@ mod tests {
 
   #[test]
   fn send_error_test() {
-    let e = ldtk2::Ldtk2Error::Io(std::io::Error::from(std::io::ErrorKind::NotFound));
+    let e = ldtk2::Error::Io(std::io::Error::from(std::io::ErrorKind::NotFound));
     let handle = std::thread::spawn(move || {
       drop(e);
     });

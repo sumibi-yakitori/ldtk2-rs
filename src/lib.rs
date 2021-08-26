@@ -48,7 +48,7 @@ use std::{convert::TryFrom, path::Path};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum Ldtk2Error {
+pub enum Error {
   #[error(transparent)]
   Io(#[from] std::io::Error),
   #[error(transparent)]
@@ -56,11 +56,11 @@ pub enum Ldtk2Error {
 }
 
 impl Ldtk {
-  pub fn from_path(path: impl AsRef<Path>) -> Result<Self, Ldtk2Error> {
+  pub fn from_path(path: impl AsRef<Path>) -> Result<Self, Error> {
     // let path_str = path.as_ref().to_string_lossy().to_string();
     Ok(serde_json::from_str(
       &std::fs::read_to_string(path)
-        .map_err(|e| Ldtk2Error::Io(e))
+        .map_err(|e| Error::Io(e))
         // .with_context(|| format!("Failed to open ldtk file: {}", path_str))
         ?,
     )?)
@@ -72,7 +72,7 @@ impl Ldtk {
 }
 
 impl TryFrom<&Path> for Ldtk {
-  type Error = Ldtk2Error;
+  type Error = Error;
 
   fn try_from(path: &Path) -> Result<Self, Self::Error> {
     Ldtk::from_path(path)
