@@ -58,17 +58,16 @@ pub enum Ldtk2Error {
 impl Ldtk {
   pub fn from_path(path: impl AsRef<Path>) -> Result<Self, Ldtk2Error> {
     // let path_str = path.as_ref().to_string_lossy().to_string();
-    let value: Self =
-      serde_json::from_str(&std::fs::read_to_string(path)
+    Ok(serde_json::from_str(
+      &std::fs::read_to_string(path)
         .map_err(|e| Ldtk2Error::Io(e))
         // .with_context(|| format!("Failed to open ldtk file: {}", path_str))
-        ?)?;
-    Ok(value)
+        ?,
+    )?)
   }
 
   pub fn from_str(s: impl AsRef<str>) -> Result<Self, serde_json::Error> {
-    let value: Self = serde_json::from_str(s.as_ref())?;
-    Ok(value)
+    Ok(serde_json::from_str(s.as_ref())?)
   }
 }
 
