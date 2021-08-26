@@ -38,21 +38,31 @@
 
 mod ldtk;
 
-pub use anyhow;
+// pub use anyhow;
 pub use ldtk::*;
 pub use serde_json;
 pub type Ldtk = Coordinate;
 
-use anyhow::{Context, Error, Result};
+// use anyhow::{Context, Error, Result};
 use std::{convert::TryFrom, path::Path};
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum Ldtk2Error {
+  #[error(transparent)]
+  Io(#[from] std::io::Error),
+  #[error(transparent)]
+  SerdeJson(#[from] serde_json::Error),
+}
 
 impl Ldtk {
-  pub fn from_path(path: impl AsRef<Path>) -> Result<Self> {
-    let path_str = path.as_ref().to_string_lossy().to_string();
-    let value: Self = serde_json::from_str(
-      &std::fs::read_to_string(path)
-        .with_context(|| format!("Failed to open ldtk file: {}", path_str))?,
-    )?;
+  pub fn from_path(path: impl AsRef<Path>) -> Result<Self, Ldtk2Error> {
+    // let path_str = path.as_ref().to_string_lossy().to_string();
+    let value: Self =
+      serde_json::from_str(&std::fs::read_to_string(path)
+        .map_err(|e| Ldtk2Error::Io(e))
+        // .with_context(|| format!("Failed to open ldtk file: {}", path_str))
+        ?)?;
     Ok(value)
   }
 
@@ -63,9 +73,9 @@ impl Ldtk {
 }
 
 impl TryFrom<&Path> for Ldtk {
-  type Error = Error;
+  type Error = Ldtk2Error;
 
-  fn try_from(path: &Path) -> Result<Self> {
+  fn try_from(path: &Path) -> Result<Self, Self::Error> {
     Ldtk::from_path(path)
   }
 }
@@ -73,7 +83,7 @@ impl TryFrom<&Path> for Ldtk {
 impl TryFrom<&str> for Ldtk {
   type Error = serde_json::Error;
 
-  fn try_from(s: &str) -> Result<Self, serde_json::Error> {
+  fn try_from(s: &str) -> Result<Self, Self::Error> {
     Ldtk::from_str(s)
   }
 }

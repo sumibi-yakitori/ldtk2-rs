@@ -3,7 +3,7 @@ mod tests {
   use std::{convert::TryInto, error::Error, path::Path};
 
   #[test]
-  fn test() -> Result<(), Box<dyn Error>> {
+  fn basic_test() -> Result<(), Box<dyn Error>> {
     use ldtk2::Ldtk;
 
     let _map = Ldtk::from_path("tests/example.ldtk")?;
@@ -15,5 +15,14 @@ mod tests {
     let _map: Ldtk = include_str!("../tests/example.ldtk").try_into()?;
 
     Ok(())
+  }
+
+  #[test]
+  fn send_error_test() {
+    let e = ldtk2::Ldtk2Error::Io(std::io::Error::from(std::io::ErrorKind::NotFound));
+    let handle = std::thread::spawn(move || {
+      drop(e);
+    });
+    assert!(handle.join().is_ok());
   }
 }
