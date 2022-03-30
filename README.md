@@ -16,7 +16,7 @@ A thin crate for people who just want to use ldtk files freely.
 
 ## Supported LDtk file versions
 
-`^0.9.3`
+`^1.0.0`
 
 
 ## Usage
