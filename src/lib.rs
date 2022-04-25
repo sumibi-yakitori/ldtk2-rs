@@ -9,7 +9,7 @@
 //!
 //! # Supported LDtk file versions
 //!
-//! `^1.0.0`
+//! `^1.1.3`
 //!
 //!
 //! # Usage
