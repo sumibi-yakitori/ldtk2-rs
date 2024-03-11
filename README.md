@@ -27,9 +27,9 @@ cargo add ldtk2
 
 ```rust
 use std::{error::Error, path::Path, convert::TryInto};
+use ldtk2::Ldtk;
 
 fn main() -> Result<(), Box<dyn Error>> {
-  use ldtk2::Ldtk;
 
   let map = Ldtk::from_path("tests/example.ldtk")?;
   // or

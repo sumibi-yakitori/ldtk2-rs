@@ -15,6 +15,6 @@ cargo publish
 ## update_schema
 
 ```sh
-ldtk2_gen
+ldtk_gen
 ```
 
