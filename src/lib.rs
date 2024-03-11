@@ -41,7 +41,7 @@ mod ldtk;
 // pub use anyhow;
 pub use ldtk::*;
 pub use serde_json;
-pub type Ldtk = LdtkJsonRoot;
+pub type Ldtk = LdtkJson;
 
 // use anyhow::{Context, Error, Result};
 use std::{convert::TryFrom, path::Path};
